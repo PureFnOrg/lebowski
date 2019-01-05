@@ -3,42 +3,45 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [clojure.string :as str]
-            [taoensso.timbre :as log]
-            [com.stuartsierra.component :as component]
             [com.gfredericks.test.chuck.generators :refer [string-from-regex]]
-            [org.purefn.kurosawa.result :refer :all]
-            [org.purefn.kurosawa.error :as error]
-            [org.purefn.kurosawa.log.core :as klog]
-            [org.purefn.kurosawa.log.api :as log-api]
-            [org.purefn.kurosawa.log.protocol :as log-proto]
-            [org.purefn.kurosawa.util :as util]
-            [org.purefn.kurosawa.k8s :as k8s]
+            [com.stuartsierra.component :as component]
             [org.purefn.bridges.api :as api]
+            [org.purefn.bridges.cache.api :as cache]
             [org.purefn.bridges.protocol :as proto]
+            [org.purefn.kurosawa.error :as error]
+            [org.purefn.kurosawa.health :as health]
+            [org.purefn.kurosawa.k8s :as k8s]
+            [org.purefn.kurosawa.log.api :as log-api]
+            [org.purefn.kurosawa.log.core :as klog]
+            [org.purefn.kurosawa.log.protocol :as log-proto]
+            [org.purefn.kurosawa.result :refer :all]
+            [org.purefn.kurosawa.util :as util]
             [org.purefn.lebowski.encoder.api :as encoder]
-            [org.purefn.lebowski.encoder.edn-encoder :refer [edn-encoder]]
-            [org.purefn.lebowski.encoder.nippy-encoder :refer [nippy-encoder]]
             [org.purefn.lebowski.encoder.binary-encoder :refer [binary-encoder]]
-            [org.purefn.lebowski.encoder.json-encoder :refer [json-encoder]])
-  (:import [com.couchbase.client.java
-            CouchbaseCluster Bucket]
+            [org.purefn.lebowski.encoder.edn-encoder :refer [edn-encoder]]
+            [org.purefn.lebowski.encoder.json-encoder :refer [json-encoder]]
+            [org.purefn.lebowski.encoder.nippy-encoder :refer [nippy-encoder]]
+            [taoensso.timbre :as log])
+  (:import [com.couchbase.client.core
+            BackpressureException]
            [com.couchbase.client.core.env
             CoreEnvironment]
-           [com.couchbase.client.java.env
-            CouchbaseEnvironment DefaultCouchbaseEnvironment]
-           [java.util.concurrent TimeoutException]
+           [com.couchbase.client.java
+            CouchbaseCluster Bucket]
            [com.couchbase.client.java.document
             AbstractDocument StringDocument
             JsonDocument JsonArrayDocument]
            [com.couchbase.client.java.document.json
             JsonObject JsonArray]
+           [com.couchbase.client.java.env
+            CouchbaseEnvironment DefaultCouchbaseEnvironment]
            [com.couchbase.client.java.error
             DocumentDoesNotExistException DocumentAlreadyExistsException
             TemporaryFailureException CASMismatchException]
-           [com.couchbase.client.core
-            BackpressureException]
            [com.couchbase.client.java.subdoc
-            MutateInBuilder LookupInBuilder DocumentFragment]))
+            MutateInBuilder LookupInBuilder DocumentFragment]
+           [java.util UUID]
+           [java.util.concurrent TimeoutException]))
 
 
 ;;------------------------------------------------------------------------------
@@ -48,6 +51,7 @@
 (defn- reason
   "The high-level reason for the failure."
   [ex]
+  (println ex)
   (cond
     (instance? clojure.lang.ExceptionInfo ex) (::api/reason (ex-data ex)
                                                             ::api/fatal)
@@ -295,7 +299,13 @@
               encoders {:edn (edn-encoder)
                         :nippy (nippy-encoder)
                         :binary (binary-encoder)
-                        :json (json-encoder)}]
+                        :json (json-encoder)}
+              health-keys (->> namespaces
+                               (map (juxt (comp ::bucket second)
+                                          identity))
+                               (into {})
+                               (map (juxt (comp first second)
+                                          (constantly (str (UUID/randomUUID))))))]
 
           (doseq [[nname {:keys [::bucket ::key-sets]}] namespaces]
             (let [bs (->> [bucket key-sets]
@@ -316,6 +326,7 @@
           (log/info "Couchbase started.")
           (assoc this
                  :env nenv
+                 :health-keys health-keys
                  :cluster ncluster
                  :buckets buckets
                  :encoders encoders)))))
@@ -649,7 +660,19 @@
                           :key key
                           :ttl ttl})
                   some?)
-          (success)))))
+          (success))))
+
+  ;;--------------------------------------------------------------------------------
+  health/HealthCheck
+  (healthy? [this]
+    (->> (:health-keys this)
+         (map (fn [[ns k]]
+                (cache/swap-in
+                 this ns k
+                 (fn [_]
+                   (vec (repeatedly (rand-int 5) #(UUID/randomUUID))))
+                 60))
+              ))))
 
 
 ;;------------------------------------------------------------------------------
