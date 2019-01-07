@@ -665,12 +665,16 @@
   (healthy? [this]
     (->> (:health-keys this)
          (map (fn [[ns k]]
-                (cache/swap-in
-                 this ns k
-                 (fn [_]
-                   {:uuids (repeatedly (rand-int 5) (comp str #(UUID/randomUUID)))})
-                 60)))
-         (every? some?))))
+                (if (cache/swap-in
+                     this ns k
+                     (fn [_]
+                       {:uuids (repeatedly (rand-int 5) (comp str #(UUID/randomUUID)))})
+                     60)
+                  true
+                  (do (log/error "Health check failed!"
+                                 {:namespace ns})
+                      false))))
+         (every? true?))))
 
 
 ;;------------------------------------------------------------------------------

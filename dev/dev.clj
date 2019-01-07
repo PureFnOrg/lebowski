@@ -21,7 +21,10 @@
                                        "fruit-two" {::cb/encoder :nippy
                                                 ::cb/bucket "nippy"}
                                        "bytes" {::cb/encoder :binary
-                                                ::cb/bucket "binary"}})]
+                                                ::cb/bucket "binary"}})
+        ;;config (assoc-in config [::cb/bucket-passwords "json"] "foo")
+        ]
+;;    (println config)
     (component/system-map
      :couch (cb/couchbase config))))
 
