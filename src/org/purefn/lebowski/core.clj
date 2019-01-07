@@ -670,9 +670,9 @@
                 (cache/swap-in
                  this ns k
                  (fn [_]
-                   (vec (repeatedly (rand-int 5) #(UUID/randomUUID))))
-                 60))
-              ))))
+                   {:uuids (repeatedly (rand-int 5) (comp str #(UUID/randomUUID)))})
+                 60)))
+         (every? some?))))
 
 
 ;;------------------------------------------------------------------------------

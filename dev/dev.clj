@@ -16,6 +16,10 @@
                                                   ::cb/bucket "json"} 
                                        "fruit" {::cb/encoder :nippy
                                                 ::cb/bucket "nippy"}
+                                       "insects-two" {::cb/encoder :json
+                                                  ::cb/bucket "json"} 
+                                       "fruit-two" {::cb/encoder :nippy
+                                                ::cb/bucket "nippy"}
                                        "bytes" {::cb/encoder :binary
                                                 ::cb/bucket "binary"}})]
     (component/system-map
