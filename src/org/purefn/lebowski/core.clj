@@ -15,6 +15,7 @@
             [org.purefn.kurosawa.log.core :as klog]
             [org.purefn.kurosawa.log.protocol :as log-proto]
             [org.purefn.kurosawa.result :refer :all]
+            [org.purefn.kurosawa.transform :as xform]
             [org.purefn.kurosawa.util :as util]
             [org.purefn.lebowski.encoder.api :as encoder]
             [org.purefn.lebowski.encoder.binary-encoder :refer [binary-encoder]]
@@ -299,11 +300,9 @@
                         :nippy (nippy-encoder)
                         :binary (binary-encoder)
                         :json (json-encoder)}
-              health-keys (->> namespaces
-                               (map (juxt (comp ::bucket val)
-                                          identity))
-                               (into {})
-                               (map (juxt (comp first val)
+              health-keys (->> (vec namespaces)
+                               (xform/distinct-by (comp ::bucket val))
+                               (map (juxt first
                                           (constantly (str (UUID/randomUUID))))))]
 
           (doseq [[nname {:keys [::bucket ::key-sets]}] namespaces]
