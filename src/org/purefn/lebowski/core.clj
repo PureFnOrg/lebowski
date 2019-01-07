@@ -259,7 +259,7 @@
 ;;------------------------------------------------------------------------------
 
 (defrecord Couchbase
-    [config cluster buckets encoders]
+    [config cluster buckets encoders health-keys]
   
   component/Lifecycle
   (start [this]
