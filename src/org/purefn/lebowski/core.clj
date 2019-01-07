@@ -300,10 +300,10 @@
                         :binary (binary-encoder)
                         :json (json-encoder)}
               health-keys (->> namespaces
-                               (map (juxt (comp ::bucket second)
+                               (map (juxt (comp ::bucket val)
                                           identity))
                                (into {})
-                               (map (juxt (comp first second)
+                               (map (juxt (comp first val)
                                           (constantly (str (UUID/randomUUID))))))]
 
           (doseq [[nname {:keys [::bucket ::key-sets]}] namespaces]
