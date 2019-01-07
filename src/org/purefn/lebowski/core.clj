@@ -51,7 +51,6 @@
 (defn- reason
   "The high-level reason for the failure."
   [ex]
-  (println ex)
   (cond
     (instance? clojure.lang.ExceptionInfo ex) (::api/reason (ex-data ex)
                                                             ::api/fatal)
