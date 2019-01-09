@@ -8,8 +8,8 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
                  [com.stuartsierra/component "0.3.2"]
                  
-                 [org.purefn/kurosawa.core "2.0.5"]
-                 [org.purefn/kurosawa.log "2.0.5"]
+                 [org.purefn/kurosawa.core "2.0.11"]
+                 [org.purefn/kurosawa.log "2.0.11"]
                  [org.purefn/bridges "1.13.0"]
 
                  ;; silence noisy internal couchbase logs
@@ -23,6 +23,10 @@
                  [com.cemerick/url "0.1.1"]
                  [clj-http "3.5.0"]
                  [cheshire "5.7.1"]]
+  
+  :deploy-repositories
+  [["releases" {:url "https://clojars.org/repo/" :creds :gpg}]]
+
    :profiles
   {:dev {:dependencies [[org.clojure/tools.namespace "0.2.11"]]
          :jvm-opts ["-Xmx2g"]

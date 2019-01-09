@@ -1,29 +1,30 @@
 (ns dev
-  (:require [com.stuartsierra.component :as component]
-            [clojure.tools.namespace.repl :refer [refresh refresh-all]]
+  (:require [clojure.tools.namespace.repl :refer [refresh refresh-all]]
+            [com.stuartsierra.component :as component]
+            [org.purefn.bridges.api :as kv]
+            [org.purefn.kurosawa.health :as health]
             [org.purefn.kurosawa.log.core :as klog]
-            [org.purefn.lebowski.core :as cb]
-            [org.purefn.bridges.api :as kv]))
+            [org.purefn.lebowski.core :as cb]))
 
 (defn default-system
   []
-  (let [config {::cb/hosts [;;TODO
-                            ]
-                ::cb/bucket-passwords {;;TODO
-                                       }
-                ::cb/namespaces {"animals" {::cb/encoder :edn
-                                            ::cb/bucket "edn"
-                                            ::cb/key-sets "json"}
-                                 "fruit" {::cb/encoder :nippy
-                                          ::cb/bucket "nippy"}
-                                 "bytes" {::cb/encoder :binary
-                                          ::cb/bucket "binary"}
-                                 "jobseeker-profile" {::cb/encoder :nippy
-                                                      ::cb/bucket  "nippy"}}
-                ::cb/initial-delay-ms 2
-                ::cb/busy-delay-ms 500
-                ::cb/busy-retries 3
-                ::cb/max-retries 10}]
+  (let [config (assoc (cb/default-config "aws-couchbase")
+                      ::cb/namespaces {"animals" {::cb/encoder :edn
+                                                  ::cb/bucket "edn"
+                                                  ::cb/key-sets "json"}
+                                       "insects" {::cb/encoder :json
+                                                  ::cb/bucket "json"} 
+                                       "fruit" {::cb/encoder :nippy
+                                                ::cb/bucket "nippy"}
+                                       "insects-two" {::cb/encoder :json
+                                                  ::cb/bucket "json"} 
+                                       "fruit-two" {::cb/encoder :nippy
+                                                ::cb/bucket "nippy"}
+                                       "bytes" {::cb/encoder :binary
+                                                ::cb/bucket "binary"}})
+        ;;config (assoc-in config [::cb/bucket-passwords "json"] "foo")
+        ]
+;;    (println config)
     (component/system-map
      :couch (cb/couchbase config))))
 
@@ -55,7 +56,7 @@
   (init)
   #_(klog/init-dev-logging)         ;; high-level and low-level to console.
   (klog/init-dev-logging system)    ;; high-level only.
-  (klog/set-level :debug)
+  ;;(klog/set-level :debug)
   #_(klog/init-prod-logging system) ;; high-level to console, low-level to files.
   (start)
   :ready)
