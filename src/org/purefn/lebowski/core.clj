@@ -53,8 +53,9 @@
   "The high-level reason for the failure."
   [ex]
   (cond
-    (instance? clojure.lang.ExceptionInfo ex) (::api/reason (ex-data ex)
-                                                            ::api/fatal)
+    (instance? clojure.lang.ExceptionInfo ex) (do (log/error ex "Fatal Error")
+                                                  (::api/reason (ex-data ex)
+                                                                ::api/fatal))
     (instance? CASMismatchException ex) ::api/cas-mismatch
     (instance? DocumentDoesNotExistException ex) ::api/doc-missing
     (instance? DocumentAlreadyExistsException ex) ::api/doc-exists
@@ -63,7 +64,8 @@
              (instance? TimeoutException (.getCause ^Exception ex)))
         (instance? BackpressureException ex)
         (instance? TemporaryFailureException ex)) ::api/server-busy
-    :default ::api/fatal))
+    :default (do (log/error ex "Fatal Error")
+                 ::api/fatal)))
 
 (def ^:private snafu
   (partial error/snafu reason ::api/reason ::api/fatal))
