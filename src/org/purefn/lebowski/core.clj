@@ -103,11 +103,12 @@
     (retry-generic couch f recovery)))
 
 (defn- success-or-throw
-  "Unwraps an result, throwing if `Failure`, and returning the underlying value
+  "Unwraps a result, throwing if `Failure`, and returning the underlying value
   if `Success`."
   [result]
-  (if-let [ex (failure result)]
-    (throw ex)
+  (if-let [f (failure result)]
+    (throw (or (and (instance? Exception f) f)
+               (ex-info "Unknown failure" {:failure f})))
     (success result)))
 
 ;;------------------------------------------------------------------------------
