@@ -53,9 +53,8 @@
   "The high-level reason for the failure."
   [ex]
   (cond
-    (instance? clojure.lang.ExceptionInfo ex) (do (log/error ex "Fatal Error")
-                                                  (::api/reason (ex-data ex)
-                                                                ::api/fatal))
+    (instance? clojure.lang.ExceptionInfo ex) (::api/reason (ex-data ex)
+                                                            ::api/fatal)
     (instance? CASMismatchException ex) ::api/cas-mismatch
     (instance? DocumentDoesNotExistException ex) ::api/doc-missing
     (instance? DocumentAlreadyExistsException ex) ::api/doc-exists
@@ -64,8 +63,7 @@
              (instance? TimeoutException (.getCause ^Exception ex)))
         (instance? BackpressureException ex)
         (instance? TemporaryFailureException ex)) ::api/server-busy
-    :default (do (log/error ex "Fatal Error")
-                 ::api/fatal)))
+    :default ::api/fatal))
 
 (def ^:private snafu
   (partial error/snafu reason ::api/reason ::api/fatal))
@@ -104,6 +102,13 @@
         recovery {::api/server-busy (partial + busy-delay-ms)}]
     (retry-generic couch f recovery)))
 
+(defn- success-or-throw
+  "Unwraps an result, throwing if `Failure`, and returning the underlying value
+  if `Success`."
+  [result]
+  (if-let [ex (failure result)]
+    (throw ex)
+    (success result)))
 
 ;;------------------------------------------------------------------------------
 ;; Couchbase Helpers.
@@ -632,12 +637,12 @@
   (fetch [this namespace key]
     (klog/fn-trace :fetch {:namespace namespace :key key})
     (-> (proto/fetch* this namespace key)
-        (success)))
+        (success-or-throw)))
   
   (destroy [this namespace key]
     (klog/fn-trace :destroy {:namespace namespace :key key})
     (-> (proto/destroy* this namespace key)
-        (success)))
+        (success-or-throw)))
 
   (write [this namespace key value]
     (klog/fn-trace :write {:namespace namespace :key key :value value})
@@ -646,7 +651,7 @@
   (swap-in [this namespace key f]
     (klog/fn-trace :swap-in {:namespace namespace :key key :f f})
     (-> (retry this #(proto/swap-in* this namespace key f))
-        (success)))
+        (success-or-throw)))
 
 
   ;;--------------------------------------------------------------------------------
