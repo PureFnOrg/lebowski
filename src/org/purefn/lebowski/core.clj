@@ -107,7 +107,7 @@
   if `Success`."
   [result]
   (if-let [f (failure result)]
-    (throw (or (and (instance? Exception f) f)
+    (throw (or (and (instance? Throwable f) f)
                (ex-info "Unknown failure" {:failure f})))
     (success result)))
 

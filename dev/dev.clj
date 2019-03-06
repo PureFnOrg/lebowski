@@ -66,3 +66,18 @@
   []
   (stop)
   (refresh :after `go))
+
+;; this much concurrency on the same key creates the failure mode (at least on the
+;; cluster I'm testing againt) of CAS mismatches and retries exhausting.  An exception
+;; is properly thrown.
+
+(defn create-cas-mismatch
+  []
+  (->> (range 20)
+       (pmap (fn [i]
+               (kv/swap-in (:couch system)
+                           "fruit"
+                           "cas"
+                           (fn [_]
+                             (Thread/sleep 600)
+                             i))))))
