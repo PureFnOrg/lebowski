@@ -166,6 +166,21 @@
     (fail (ex-info "Improperly configured encoder for namespace!" 
                    {::api/namespace namespace}))))
 
+;; couchbase expiration is rather odd, when the value is small
+;; it represents offset, yet when larger, unix epoch -- so here
+;; we will normalize to always use epoch
+;; https://docs.couchbase.com/server/4.1/developer-guide/expiry.html#expiry-value
+
+(defn- ttl-epoch
+  "Convert ttl to epoch-ttl when provided offset in seconds, yet also
+   accept ttl provided as epoch"
+   [ttl]
+   (let [unix-ts (quot (System/currentTimeMillis) 1000)
+         offset (try (Math/toIntExact ttl) (catch Exception e nil))]
+     (cond
+       (nil? offset) nil
+       (> offset unix-ts) offset
+       :else (+ unix-ts offset))))
 
 ;;------------------------------------------------------------------------------
 ;; Java Interop Helper Functions. 
@@ -658,7 +673,7 @@
   ;;--------------------------------------------------------------------------------
   proto/Cache
   (expire [this namespace key ttl]
-    (let [expiry (attempt #(Math/toIntExact %) ttl)]
+    (let [expiry (ttl-epoch ttl)]
       (-> (attempt ns-bucket* this namespace)
           (proceed-all touch expiry (ns-key namespace key))
           (branch (snafu "Failed to expire key in Couchbase!"
