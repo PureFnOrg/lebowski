@@ -326,7 +326,8 @@
               health-keys (->> (vec namespaces)
                                (xform/distinct-by (comp ::bucket val))
                                (map (juxt first
-                                          (constantly (str (UUID/randomUUID))))))]
+                                          (constantly (str "health-check-"
+                                                           (UUID/randomUUID))))))]
 
           (doseq [[nname {:keys [::bucket ::key-sets]}] namespaces]
             (let [bs (->> [bucket key-sets]
@@ -687,17 +688,16 @@
   health/HealthCheck
   (healthy? [this]
     (->> (:health-keys this)
-         (map (fn [[ns k]]
-                (if (cache/swap-in
-                     this ns k
-                     (fn [_]
-                       {:uuids (repeatedly (rand-int 5) (comp str #(UUID/randomUUID)))})
-                     60)
-                  true
-                  (do (log/error "Health check failed!"
-                                 {:namespace ns})
-                      false))))
-         (every? true?))))
+         (remove (fn [[ns k]] (proto/expire this ns k 120)))
+         (remove
+          (fn [[ns k :as health-key]]
+            (locking health-key 
+              (cache/swap-in
+               this ns k
+               (fn [_]
+                 {:uuids (repeatedly (rand-int 5) (comp str #(UUID/randomUUID)))})
+               120))))
+         (empty?))))
 
 
 ;;------------------------------------------------------------------------------
