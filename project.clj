@@ -1,4 +1,4 @@
-(defproject org.purefn/lebowski "2.0.2"
+(defproject org.purefn/lebowski "2.0.3-SNAPSHOT"
   :description "A Couchbase implementation of the Bridges protocols."
   :url "https://github.com/PureFnOrg/lebowski"
   :license {:name "Eclipse Public License"
@@ -8,8 +8,8 @@
   :dependencies [[org.clojure/clojure "1.9.0-alpha16"]
                  [com.stuartsierra/component "0.3.2"]
                  
-                 [org.purefn/kurosawa.core "2.0.11"]
-                 [org.purefn/kurosawa.log "2.0.11"]
+                 [org.purefn/kurosawa.core "2.1.10"]
+                 [org.purefn/kurosawa.log "2.1.10"]
                  [org.purefn/bridges "1.13.0"]
 
                  ;; silence noisy internal couchbase logs
