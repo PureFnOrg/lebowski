@@ -1,4 +1,4 @@
-(defproject org.purefn/lebowski "2.0.3-SNAPSHOT"
+(defproject org.purefn/lebowski "2.0.3"
   :description "A Couchbase implementation of the Bridges protocols."
   :url "https://github.com/PureFnOrg/lebowski"
   :license {:name "Eclipse Public License"
